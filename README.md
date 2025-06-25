@@ -43,6 +43,12 @@ AI-powered voice assistant that handles phone calls through LiveKit SIP integrat
    uv run scripts/setup_livekit_telephony.py
    ```
 
+5. **Set your SIP trunk ID**:
+   After running the setup script, add your SIP trunk ID to `.env`:
+   ```bash
+   LIVEKIT_SIP_TRUNK_ID=ST_your_trunk_id_here
+   ```
+
 ## Usage
 
 Start the voice AI agent:
@@ -57,30 +63,22 @@ The agent will:
 
 ## Testing
 
-You can test the agent by making SIP calls using the LiveKit CLI:
+You can test the agent by making outbound calls:
 
-1. **Create a test participant** (makes an outbound call):
+1. **Make an outbound call**:
    ```bash
-   lk sip participant create participant.json
+   uv run python scripts/make_outbound_call.py "+15551234567" --customer-name "John Doe" --service-due "HVAC maintenance"
    ```
 
-2. **List active SIP participants**:
+2. **List active calls**:
    ```bash
-   lk sip participant list
+   uv run python scripts/make_outbound_call.py "+15551234567" --list-calls
    ```
 
-3. **Delete a SIP participant** (hang up call):
+3. **Hang up a call**:
    ```bash
-   lk sip participant delete <participant-id>
+   uv run python scripts/make_outbound_call.py "+15551234567" --hangup <participant-id>
    ```
-
-The `participant.json` file configures:
-- Source phone number (`sip_number`)
-- Destination phone number (`sip_call_to`) 
-- LiveKit room to join (`room_name`)
-- SIP trunk to use (`sip_trunk_id`)
-
-**Note**: Use the template from `livekit-telephony-templates/participant.json.template` to create your `participant.json` file with your specific phone numbers and trunk ID.
 
 ## Architecture
 
