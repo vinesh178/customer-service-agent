@@ -1,0 +1,9 @@
+{
+  "sip_number": "YOUR_SIP_NUMBER",
+  "sip_trunk_id": "YOUR_TRUNK_ID",
+  "sip_call_to": "YOUR_DESTINATION_NUMBER",
+  "room_name": "open-room",
+  "participant_identity": "sip-test",
+  "participant_name": "Test call participant",
+  "wait_until_answered": true
+}

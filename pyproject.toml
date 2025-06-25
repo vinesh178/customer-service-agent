@@ -1,0 +1,14 @@
+[project]
+name = "customer-service-agent"
+version = "0.1.0"
+description = "A customer service agent built with LiveKit, ElevenLabs, Deepgram, and Twilio."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "langfuse==2.60.8",
+    "livekit-agents[deepgram,elevenlabs,openai,silero,turn-detector]",
+    "livekit-plugins-noise-cancellation",
+    "python-dotenv",
+    "uvicorn",
+]

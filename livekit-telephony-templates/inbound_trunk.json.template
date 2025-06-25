@@ -1,0 +1,6 @@
+{
+    "name": "Inbound LiveKit Trunk",
+    "numbers": ["YOUR_PHONE_NUMBER"],
+    "auth_username": "YOUR_AUTH_USERNAME",
+    "auth_password": "YOUR_AUTH_PASSWORD"
+}
