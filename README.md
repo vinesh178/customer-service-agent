@@ -41,6 +41,7 @@ AI-powered voice assistant that handles phone calls through LiveKit SIP integrat
 
 4. **Initialize LiveKit SIP trunks**:
    ```bash
+   cd backend
    uv run scripts/setup_livekit_telephony.py
    ```
 
@@ -54,6 +55,7 @@ AI-powered voice assistant that handles phone calls through LiveKit SIP integrat
 
 Start the voice AI agent:
 ```bash
+cd backend
 uv run python agent.py dev
 ```
 
@@ -68,20 +70,10 @@ The agent will:
 
 You can test the agent by making outbound calls:
 
-1. **Make an outbound call**:
-   ```bash
-   uv run python scripts/make_outbound_call.py "+15551234567" --customer-name "John Doe" --service-due "HVAC maintenance"
-   ```
-
-2. **List active calls**:
-   ```bash
-   uv run python scripts/make_outbound_call.py "+15551234567" --list-calls
-   ```
-
-3. **Hang up a call**:
-   ```bash
-   uv run python scripts/make_outbound_call.py "+15551234567" --hangup <participant-id>
-   ```
+```bash
+cd backend
+uv run python scripts/make_outbound_call.py "+15551234567"
+```
 
 ## Architecture
 
@@ -179,6 +171,6 @@ The agent automatically adapts its behavior based on room naming:
 - **Purpose**: Contact customers about specific services or appointments
 
 **Main Components:**
-- `agent.py` - Voice AI agent with dual-mode behavior and robust connection handling
-- `scripts/setup_livekit_telephony.py` - Automated Twilio/LiveKit setup
+- `backend/agent.py` - Voice AI agent with dual-mode behavior and robust connection handling
+- `backend/scripts/setup_livekit_telephony.py` - Automated Twilio/LiveKit setup
 - `livekit-telephony-templates/` - Configuration templates for SIP trunks, dispatch rules, and test participants
