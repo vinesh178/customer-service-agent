@@ -9,6 +9,7 @@ AI-powered voice agent that handles phone calls through LiveKit SIP integration 
 - **Voicemail Detection**: Automatically detects voicemail systems and leaves professional messages (outbound only)
 - **Robust Connection**: Timeout handling and retry logic for reliable connections
 - **Phone Integration**: Handles calls via Twilio SIP trunks and LiveKit
+- **Observability**: Full conversation tracking and analytics with Langfuse integration
 
 ## Prerequisites
 
@@ -17,6 +18,7 @@ AI-powered voice agent that handles phone calls through LiveKit SIP integration 
 - [Twilio account](https://www.twilio.com/) with phone number and SIP trunking
 - [LiveKit CLI](https://docs.livekit.io/home/cli/) installed (`lk` command)
 - API keys for OpenAI, ElevenLabs, and Deepgram
+- [Langfuse account](https://langfuse.com/) for conversation observability (optional)
 
 ## Setup
 
@@ -27,9 +29,13 @@ AI-powered voice agent that handles phone calls through LiveKit SIP integration 
 
 2. **Configure environment variables**:
    ```bash
+   cd backend
    cp .env.example .env
    ```
-   Edit `.env` with your API keys and credentials.
+   Edit `.env` with your API keys and credentials, including:
+   - LiveKit and Twilio credentials
+   - OpenAI, ElevenLabs, and Deepgram API keys
+   - Langfuse credentials (optional, for observability)
 
 3. **Set up telephony configuration**:
    ```bash
@@ -46,7 +52,7 @@ AI-powered voice agent that handles phone calls through LiveKit SIP integration 
    ```
 
 5. **Set your SIP trunk ID**:
-   After running the setup script, add your SIP trunk ID to `.env`:
+   After running the setup script, add your SIP trunk ID to `backend/.env`:
    ```bash
    LIVEKIT_SIP_TRUNK_ID=ST_your_trunk_id_here
    ```

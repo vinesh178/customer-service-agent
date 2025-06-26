@@ -1,17 +1,27 @@
 import asyncio
 import logging
+from collections.abc import AsyncIterable
+from datetime import UTC, datetime
+from uuid import uuid4
 
 from dotenv import load_dotenv
+from langfuse import Langfuse
+from langfuse.client import StatefulClient
 from livekit.agents import (
     Agent,
     AgentSession,
+    ChatContext,
+    ChatMessage,
+    FunctionTool,
     JobContext,
+    ModelSettings,
     RoomInputOptions,
     RunContext,
     WorkerOptions,
     cli,
     function_tool,
     get_job_context,
+    llm,
 )
 from livekit.api import DeleteRoomRequest
 from livekit.plugins import (
@@ -26,6 +36,8 @@ logger = logging.getLogger("customer_service_agent")
 logger.setLevel(logging.INFO)
 
 load_dotenv()
+
+_langfuse = Langfuse()
 
 
 class CustomerServiceAgent(Agent):
@@ -52,6 +64,79 @@ class CustomerServiceAgent(Agent):
         super().__init__(instructions=instructions, tools=tools)
         self.ctx = ctx
         self.is_outbound = is_outbound
+        self.session_id = str(uuid4())
+        self.current_trace = None
+
+    def close(self) -> None:
+        if self.current_trace:
+            self.current_trace = None
+        _langfuse.flush()
+
+    def get_current_trace(self) -> StatefulClient:
+        if self.current_trace:
+            return self.current_trace
+        self.current_trace = _langfuse.trace(
+            name="customer_service_agent", session_id=self.session_id
+        )
+        return self.current_trace
+
+    async def on_user_turn_completed(
+        self,
+        turn_ctx: ChatContext,
+        new_message: ChatMessage,
+    ) -> None:
+        # Reset the span when a new user turn is completed
+        if self.current_trace:
+            self.current_trace = None
+        self.current_trace = _langfuse.trace(
+            name="customer_service_agent", session_id=self.session_id
+        )
+
+    async def llm_node(
+        self,
+        chat_ctx: llm.ChatContext,
+        tools: list[FunctionTool],
+        model_settings: ModelSettings,
+    ) -> AsyncIterable[llm.ChatChunk]:
+        generation = self.get_current_trace().generation(
+            name="llm_generation",
+            model="gpt-4o-mini",
+            input=openai.utils.to_chat_ctx(chat_ctx, cache_key=self.llm),
+        )
+        output = ""
+        set_completion_start_time = False
+        try:
+            async for chunk in Agent.default.llm_node(
+                self, chat_ctx, tools, model_settings
+            ):
+                if not set_completion_start_time:
+                    generation.update(
+                        completion_start_time=datetime.now(UTC),
+                    )
+                    set_completion_start_time = True
+                if chunk.delta and chunk.delta.content:
+                    output += chunk.delta.content
+                yield chunk
+        except Exception:
+            generation.update(level="ERROR")
+            raise
+        finally:
+            generation.end(output=output)
+
+    async def tts_node(
+        self, text: AsyncIterable[str], model_settings: ModelSettings
+    ) -> AsyncIterable:
+        span = self.get_current_trace().span(
+            name="tts_node", metadata={"model": "elevenlabs"}
+        )
+        try:
+            async for event in Agent.default.tts_node(self, text, model_settings):
+                yield event
+        except Exception:
+            span.update(level="ERROR")
+            raise
+        finally:
+            span.end()
 
 
 @function_tool
