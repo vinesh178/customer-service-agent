@@ -168,7 +168,6 @@ function App() {
             onConnected={onConnected}
             onDisconnected={onDisconnected}
             onError={onError}
-            audio={true}
           >
             <AudioConference />
             <SpeakingIndicator />
