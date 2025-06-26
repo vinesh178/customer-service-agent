@@ -7,9 +7,11 @@ from livekit.agents import (
     AgentSession,
     JobContext,
     RoomInputOptions,
+    RunContext,
     WorkerOptions,
     cli,
     function_tool,
+    get_job_context,
 )
 from livekit.api import DeleteRoomRequest
 from livekit.plugins import (
@@ -56,29 +58,44 @@ class Assistant(Agent):
         customer_name = "John Smith"
         service_type = "HVAC maintenance"
 
-        super().__init__(
-            instructions=f"You are Sarah from Dan and Dave's AI Consulting in Tahoe, CA. You are calling {customer_name} about their {service_type}.\n\nAfter your initial greeting, listen for the response:\n\n• LIVE CUSTOMER: If they respond conversationally, have a normal business conversation about their service.\n\n• VOICEMAIL: If you hear voicemail prompts ('at the tone', 'leave a message', 'please record'), use the leave_voicemail tool. Provide a complete professional message including: your name (Sarah), company (Dan and Dave's AI Consulting in Tahoe), reason for calling ({service_type}), and request to call back.\n\nSpeak directly to the customer, not about them."
-        )
+        # Determine call direction from room name
+        is_outbound = ctx.room.name.startswith("outbound")
+
+        if is_outbound:
+            # Outbound call - agent is calling the customer
+            instructions = f"You are Sarah from Dan and Dave's AI Consulting in Tahoe, CA. You are calling {customer_name} about their {service_type}.\n\nAfter your initial greeting, listen for the response:\n\n• LIVE CUSTOMER: If they respond conversationally, have a normal business conversation about their service.\n\n• VOICEMAIL: If you hear voicemail prompts ('at the tone', 'leave a message', 'please record'), use the leave_voicemail tool. Provide a complete professional message including: your name (Sarah), company (Dan and Dave's AI Consulting in Tahoe), reason for calling ({service_type}), and request to call back.\n\nSpeak directly to the customer, not about them."
+            self.initial_prompt = "Greet the customer and introduce yourself as Sarah from Dan and Dave's AI Consulting calling about their service."
+            tools = [leave_voicemail]
+        else:
+            # Inbound call - customer is calling the company
+            instructions = "You are Sarah, a customer service representative for Dan and Dave's AI Consulting in Tahoe, CA. A customer has called and you need to help them.\n\nIntroduce yourself professionally and ask how you can help them today. Listen to their needs and provide helpful information about our AI consulting services, technical support, or connect them with the right person if needed.\n\nBe friendly, professional, and focused on solving their problem or answering their questions."
+            self.initial_prompt = "Answer the phone professionally and introduce yourself as Sarah from Dan and Dave's AI Consulting, then ask how you can help them today."
+            tools = []
+
+        super().__init__(instructions=instructions, tools=tools)
         self.ctx = ctx
+        self.is_outbound = is_outbound
 
-    @function_tool
-    async def leave_voicemail(self, voicemail_message: str):
-        """Leave a voicemail message after detecting a voicemail system. Use AFTER hearing the greeting/beep. The voicemail_message parameter should contain the complete message you want to leave for the customer."""
-        await self.session.say(voicemail_message, allow_interruptions=False)
-        await asyncio.sleep(0.5)
 
-        # let the agent finish speaking
-        current_speech = self.session.current_speech
-        if current_speech:
-            await current_speech.wait_for_playout()
+@function_tool
+async def leave_voicemail(run_ctx: RunContext, voicemail_message: str):
+    """Leave a voicemail message after detecting a voicemail system. Use AFTER hearing the greeting/beep. The voicemail_message parameter should contain the complete message you want to leave for the customer."""
+    ctx = get_job_context()
+    await run_ctx.session.say(voicemail_message, allow_interruptions=False)
+    await asyncio.sleep(1)
 
-        await self.ctx.api.room.delete_room(
-            DeleteRoomRequest(
-                room=self.ctx.room.name,
-            )
+    # let the agent finish speaking
+    current_speech = run_ctx.session.current_speech
+    if current_speech:
+        await current_speech.wait_for_playout()
+
+    await ctx.api.room.delete_room(
+        DeleteRoomRequest(
+            room=ctx.room.name,
         )
-        await self.session.aclose()
-        await self.ctx.shutdown("voicemail_left")
+    )
+    await run_ctx.session.aclose()
+    await ctx.shutdown("voicemail_left")
 
 
 async def entrypoint(ctx: JobContext):
@@ -90,9 +107,10 @@ async def entrypoint(ctx: JobContext):
         turn_detection=EnglishModel(),
     )
 
+    assistant = Assistant(ctx)
     await session.start(
         room=ctx.room,
-        agent=Assistant(ctx),
+        agent=assistant,
         room_input_options=RoomInputOptions(),
     )
 
@@ -100,7 +118,7 @@ async def entrypoint(ctx: JobContext):
         return
 
     await session.generate_reply(
-        instructions="Greet the customer and introduce yourself as Sarah from Dan and Dave's AI Consulting calling about their service.",
+        instructions=assistant.initial_prompt,
         allow_interruptions=True,
     )
 

@@ -4,11 +4,11 @@ AI-powered voice assistant that handles phone calls through LiveKit SIP integrat
 
 ## Features
 
+- **Dual Call Modes**: Automatically adapts behavior for inbound vs outbound calls
 - **Voice AI Assistant**: Powered by OpenAI GPT-4o-mini with ElevenLabs TTS and Deepgram STT
-- **Phone Integration**: Handles inbound/outbound calls via Twilio SIP trunks
-- **Voicemail Detection**: Automatically detects voicemail systems and leaves professional messages
-- **Noise Cancellation**: Enhanced audio processing for telephony applications
-- **Multi-language Support**: Voice activity detection with multilingual turn detection
+- **Voicemail Detection**: Automatically detects voicemail systems and leaves professional messages (outbound only)
+- **Robust Connection**: Timeout handling and retry logic for reliable connections
+- **Phone Integration**: Handles calls via Twilio SIP trunks and LiveKit
 
 ## Prerequisites
 
@@ -58,9 +58,10 @@ uv run python agent.py dev
 ```
 
 The agent will:
-- Connect to your LiveKit room
-- Handle incoming/outgoing phone calls via configured SIP trunks
-- Automatically detect voicemail systems and leave appropriate messages
+- Connect to LiveKit rooms with robust timeout/retry logic
+- Automatically detect call direction from room names (`inbound*` vs `outbound*`)
+- **Inbound calls**: Answer professionally and provide customer service
+- **Outbound calls**: Proactively contact customers with voicemail detection
 - Respond as Sarah, representing Dan and Dave's AI Consulting in Tahoe, CA
 
 ## Testing
@@ -161,7 +162,23 @@ graph LR
     A --> E
 ```
 
+## Call Behavior
+
+The agent automatically adapts its behavior based on room naming:
+
+### Inbound Calls (room name starts with `inbound`)
+- **Role**: Customer service representative
+- **Greeting**: Professional introduction and "how can I help you?"
+- **Tools**: None (standard conversation only)
+- **Purpose**: Handle customer inquiries and support requests
+
+### Outbound Calls (room name starts with `outbound`)
+- **Role**: Proactive caller for service appointments/reminders
+- **Greeting**: Introduce self and reason for calling
+- **Tools**: Voicemail detection and automated message leaving
+- **Purpose**: Contact customers about specific services or appointments
+
 **Main Components:**
-- `agent.py` - Voice AI agent with OpenAI GPT-4o-mini, ElevenLabs TTS, Deepgram STT
+- `agent.py` - Voice AI agent with dual-mode behavior and robust connection handling
 - `scripts/setup_livekit_telephony.py` - Automated Twilio/LiveKit setup
 - `livekit-telephony-templates/` - Configuration templates for SIP trunks, dispatch rules, and test participants
