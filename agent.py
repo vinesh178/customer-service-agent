@@ -31,6 +31,7 @@ load_dotenv()
 class Assistant(Agent):
     def __init__(self, ctx: JobContext) -> None:
         # Hardcode customer data for testing
+        # Lookup customer and outbound call details using phone number.
         customer_name = "John Smith"
         service_type = "HVAC maintenance"
 
