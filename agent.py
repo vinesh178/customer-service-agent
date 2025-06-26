@@ -15,15 +15,15 @@ load_dotenv()
 class Assistant(Agent):
     def __init__(self) -> None:
         super().__init__(
-            instructions="You are a helpful voice AI assistant working for Dan and Dave's AI Consulting located in Tahoe CA."
+            instructions="You are a helpful voice AI assistant working for Dan and Dave's AI Consulting located in Tahoe CA.",
         )
 
 
 async def entrypoint(ctx: agents.JobContext):
     session = AgentSession(
-        stt=deepgram.STT(model="nova-3"),
+        stt=deepgram.STT(),
         llm=openai.LLM(model="gpt-4o-mini"),
-        tts=elevenlabs.TTS(model="eleven_turbo_v2_5"),
+        tts=elevenlabs.TTS(),
         vad=silero.VAD.load(),
         turn_detection=EnglishModel(),
     )
