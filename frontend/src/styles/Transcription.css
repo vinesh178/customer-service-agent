@@ -1,0 +1,48 @@
+.transcription-container {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.transcription-container h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 8px;
+}
+
+.transcription-segments {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px 0;
+}
+
+.transcription-segment {
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.transcription-segment .speaker {
+  font-weight: bold;
+  color: #2c6ecb;
+  margin-right: 5px;
+}
+
+.transcription-segment .text {
+  color: #333;
+}
+
+.transcription-segment .interim {
+  color: #888;
+  font-style: italic;
+}
+
+.no-transcription {
+  color: #666;
+  font-style: italic;
+}
