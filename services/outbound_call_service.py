@@ -51,7 +51,7 @@ class OutboundCallService:
         """
         if not room_name:
             # Format room name to match dispatch rule pattern: outbound_<caller>_<random>
-            caller_clean = phone_number.replace("+", "").replace("-", "")
+            caller_clean = phone_number.replace("-", "")
             room_name = f"outbound_{caller_clean}_{uuid4().hex[:8]}"
 
         # Prepare metadata for agent context
