@@ -1,11 +1,11 @@
 # LiveKit Twilio Customer Service Agent
 
-AI-powered voice assistant that handles phone calls through LiveKit SIP integration with Twilio, representing Dan and Dave's AI Consulting in Tahoe, CA.
+AI-powered voice agent that handles phone calls through LiveKit SIP integration with Twilio, representing Dan and Dave's AI Consulting in Tahoe, CA.
 
 ## Features
 
 - **Dual Call Modes**: Automatically adapts behavior for inbound vs outbound calls
-- **Voice AI Assistant**: Powered by OpenAI GPT-4o-mini with ElevenLabs TTS and Deepgram STT
+- **Voice AI Agent**: Powered by OpenAI GPT-4o-mini with ElevenLabs TTS and Deepgram STT
 - **Voicemail Detection**: Automatically detects voicemail systems and leaves professional messages (outbound only)
 - **Robust Connection**: Timeout handling and retry logic for reliable connections
 - **Phone Integration**: Handles calls via Twilio SIP trunks and LiveKit
@@ -53,7 +53,7 @@ AI-powered voice assistant that handles phone calls through LiveKit SIP integrat
 
 ## Usage
 
-Start the voice AI agent:
+Start the customer service agent:
 ```bash
 cd backend
 uv run python agent.py dev
@@ -64,7 +64,7 @@ The agent will:
 - Automatically detect call direction from room names (`inbound*` vs `outbound*`)
 - **Inbound calls**: Answer professionally and provide customer service
 - **Outbound calls**: Proactively contact customers with voicemail detection
-- Respond as Sarah, representing Dan and Dave's AI Consulting in Tahoe, CA
+- Act as Sarah, representing Dan and Dave's AI Consulting in Tahoe, CA
 
 ## Testing
 

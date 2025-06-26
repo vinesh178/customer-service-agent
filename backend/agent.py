@@ -28,7 +28,7 @@ logger.setLevel(logging.INFO)
 load_dotenv()
 
 
-class Assistant(Agent):
+class CustomerServiceAgent(Agent):
     def __init__(self, ctx: JobContext) -> None:
         # Hardcode customer data for testing
         # Lookup customer and outbound call details using phone number.
@@ -108,10 +108,10 @@ async def entrypoint(ctx: JobContext):
         turn_detection=EnglishModel(),
     )
 
-    assistant = Assistant(ctx)
+    agent = CustomerServiceAgent(ctx)
     await session.start(
         room=ctx.room,
-        agent=assistant,
+        agent=agent,
         room_input_options=RoomInputOptions(),
     )
 
@@ -119,7 +119,7 @@ async def entrypoint(ctx: JobContext):
         return
 
     await session.generate_reply(
-        instructions=assistant.initial_prompt,
+        instructions=agent.initial_prompt,
         allow_interruptions=True,
     )
 
