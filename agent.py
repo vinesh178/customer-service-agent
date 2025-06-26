@@ -28,30 +28,6 @@ logger.setLevel(logging.INFO)
 load_dotenv()
 
 
-async def connect(ctx: JobContext, timeout: float = 3.0, max_retries: int = 3) -> bool:
-    """Connect to LiveKit room with timeout, retries, and error handling."""
-    logger.info(f"CONNECTING TO ROOM: '{ctx.room.name}'")
-
-    for attempt in range(max_retries):
-        try:
-            await asyncio.wait_for(ctx.connect(), timeout=timeout)
-            logger.info(f"CONNECTED TO ROOM: '{ctx.room.name}'")
-            return True
-        except TimeoutError:
-            logger.warning(f"Connection attempt {attempt + 1} timed out")
-            if attempt == max_retries - 1:
-                logger.error("All connection attempts failed")
-                ctx.shutdown("connection_timeout")
-                return False
-            await asyncio.sleep(2.0)  # Wait before retry
-        except Exception as e:
-            logger.error(f"Connection failed: {e}")
-            ctx.shutdown("connection_failed")
-            return False
-
-    return False
-
-
 class Assistant(Agent):
     def __init__(self, ctx: JobContext) -> None:
         # Hardcode customer data for testing
@@ -96,6 +72,30 @@ async def leave_voicemail(run_ctx: RunContext, voicemail_message: str):
     )
     await run_ctx.session.aclose()
     await ctx.shutdown("voicemail_left")
+
+
+async def connect(ctx: JobContext, timeout: float = 3.0, max_retries: int = 3) -> bool:
+    """Connect to LiveKit room with timeout, retries, and error handling."""
+    logger.info(f"CONNECTING TO ROOM: '{ctx.room.name}'")
+
+    for attempt in range(max_retries):
+        try:
+            await asyncio.wait_for(ctx.connect(), timeout=timeout)
+            logger.info(f"CONNECTED TO ROOM: '{ctx.room.name}'")
+            return True
+        except TimeoutError:
+            logger.warning(f"Connection attempt {attempt + 1} timed out")
+            if attempt == max_retries - 1:
+                logger.error("All connection attempts failed")
+                ctx.shutdown("connection_timeout")
+                return False
+            await asyncio.sleep(2.0)  # Wait before retry
+        except Exception as e:
+            logger.error(f"Connection failed: {e}")
+            ctx.shutdown("connection_failed")
+            return False
+
+    return False
 
 
 async def entrypoint(ctx: JobContext):
