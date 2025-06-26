@@ -10,7 +10,6 @@ from livekit.agents import (
     WorkerOptions,
     cli,
     function_tool,
-    get_job_context,
 )
 from livekit.api import DeleteRoomRequest
 from livekit.plugins import (
@@ -27,21 +26,32 @@ logger.setLevel(logging.INFO)
 load_dotenv()
 
 
-async def hangup_call():
-    ctx = get_job_context()
-    if ctx is None:
-        # Not running in a job context
-        return
+async def connect(ctx: JobContext, timeout: float = 3.0, max_retries: int = 3) -> bool:
+    """Connect to LiveKit room with timeout, retries, and error handling."""
+    logger.info(f"CONNECTING TO ROOM: '{ctx.room.name}'")
 
-    await ctx.api.room.delete_room(
-        DeleteRoomRequest(
-            room=ctx.room.name,
-        )
-    )
+    for attempt in range(max_retries):
+        try:
+            await asyncio.wait_for(ctx.connect(), timeout=timeout)
+            logger.info(f"CONNECTED TO ROOM: '{ctx.room.name}'")
+            return True
+        except TimeoutError:
+            logger.warning(f"Connection attempt {attempt + 1} timed out")
+            if attempt == max_retries - 1:
+                logger.error("All connection attempts failed")
+                ctx.shutdown("connection_timeout")
+                return False
+            await asyncio.sleep(2.0)  # Wait before retry
+        except Exception as e:
+            logger.error(f"Connection failed: {e}")
+            ctx.shutdown("connection_failed")
+            return False
+
+    return False
 
 
 class Assistant(Agent):
-    def __init__(self) -> None:
+    def __init__(self, ctx: JobContext) -> None:
         # Hardcode customer data for testing
         customer_name = "John Smith"
         service_type = "HVAC maintenance"
@@ -49,6 +59,7 @@ class Assistant(Agent):
         super().__init__(
             instructions=f"You are Sarah from Dan and Dave's AI Consulting in Tahoe, CA. You are calling {customer_name} about their {service_type}.\n\nAfter your initial greeting, listen for the response:\n\n• LIVE CUSTOMER: If they respond conversationally, have a normal business conversation about their service.\n\n• VOICEMAIL: If you hear voicemail prompts ('at the tone', 'leave a message', 'please record'), use the leave_voicemail tool. Provide a complete professional message including: your name (Sarah), company (Dan and Dave's AI Consulting in Tahoe), reason for calling ({service_type}), and request to call back.\n\nSpeak directly to the customer, not about them."
         )
+        self.ctx = ctx
 
     @function_tool
     async def leave_voicemail(self, voicemail_message: str):
@@ -61,8 +72,13 @@ class Assistant(Agent):
         if current_speech:
             await current_speech.wait_for_playout()
 
+        await self.ctx.api.room.delete_room(
+            DeleteRoomRequest(
+                room=self.ctx.room.name,
+            )
+        )
         await self.session.aclose()
-        await hangup_call()
+        await self.ctx.shutdown("voicemail_left")
 
 
 async def entrypoint(ctx: JobContext):
@@ -76,13 +92,12 @@ async def entrypoint(ctx: JobContext):
 
     await session.start(
         room=ctx.room,
-        agent=Assistant(),
+        agent=Assistant(ctx),
         room_input_options=RoomInputOptions(),
     )
 
-    logger.info(f"CONNECTING TO ROOM: '{ctx.room.name}'")
-    await ctx.connect()
-    logger.info(f"CONNECTED TO ROOM: '{ctx.room.name}'")
+    if not await connect(ctx):
+        return
 
     await session.generate_reply(
         instructions="Greet the customer and introduce yourself as Sarah from Dan and Dave's AI Consulting calling about their service.",
