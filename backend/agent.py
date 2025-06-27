@@ -2,9 +2,12 @@ import asyncio
 import logging
 from collections.abc import AsyncIterable
 from datetime import UTC, datetime
+from pathlib import Path
+from random import random
 from uuid import uuid4
 
 from dotenv import load_dotenv
+from jinja2 import Environment, FileSystemLoader
 from langfuse import Langfuse
 from langfuse.client import StatefulClient
 from livekit.agents import (
@@ -32,6 +35,8 @@ from livekit.plugins import (
 )
 from livekit.plugins.turn_detector.english import EnglishModel
 
+from services.customer_service import CustomerService
+
 logger = logging.getLogger("customer_service_agent")
 logger.setLevel(logging.INFO)
 
@@ -39,31 +44,35 @@ load_dotenv()
 
 _langfuse = Langfuse()
 
+# Setup Jinja2 environment for templates
+template_dir = Path(__file__).parent / "prompts"
+jinja_env = Environment(loader=FileSystemLoader(template_dir))
+
 
 class CustomerServiceAgent(Agent):
     def __init__(self, ctx: JobContext) -> None:
-        # Hardcode customer data for testing
-        # Lookup customer and outbound call details using phone number.
-        customer_name = "John Smith"
-        service_type = "HVAC maintenance"
+        # Extract call direction and phone number from room name: "{inbound|outbound}_{phone_number}_{random_str}"
+        call_direction, phone_number, _ = ctx.room.name.split("_")
 
-        # Determine call direction from room name
-        is_outbound = ctx.room.name.startswith("outbound")
+        # Lookup customer data using phone number
+        template_context = CustomerService.get_template_context(phone_number)
 
-        if is_outbound:
-            # Outbound call - agent is calling the customer
-            instructions = f"You are Sarah from Dan and Dave's AI Consulting in Tahoe, CA. You are calling {customer_name} about their {service_type}.\n\nAfter your initial greeting, listen for the response:\n\n• LIVE CUSTOMER: If they respond conversationally, have a normal business conversation about their service.\n\n• VOICEMAIL: If you hear voicemail prompts ('at the tone', 'leave a message', 'please record'), use the leave_voicemail tool. Provide a complete professional message including: your name (Sarah), company (Dan and Dave's AI Consulting in Tahoe), reason for calling ({service_type}), and request to call back.\n\nSpeak directly to the customer, not about them."
-            self.initial_prompt = "Greet the customer and introduce yourself as Sarah from Dan and Dave's AI Consulting calling about their service."
-            tools = [leave_voicemail]
-        else:
-            # Inbound call - customer is calling the company
-            instructions = "You are Sarah, a customer service representative for Dan and Dave's AI Consulting in Tahoe, CA. A customer has called and you need to help them.\n\nIntroduce yourself professionally and ask how you can help them today. Listen to their needs and provide helpful information about our AI consulting services, technical support, or connect them with the right person if needed.\n\nBe friendly, professional, and focused on solving their problem or answering their questions."
-            self.initial_prompt = "Answer the phone professionally and introduce yourself as Sarah from Dan and Dave's AI Consulting, then ask how you can help them today."
-            tools = []
+        # Load templates based on call direction
+        instructions_template = jinja_env.get_template(
+            f"instructions_{call_direction}.j2"
+        )
+        instructions = instructions_template.render(template_context)
+
+        initial_prompt_template = jinja_env.get_template(
+            f"initial_prompt_{call_direction}.j2"
+        )
+        self.initial_prompt = initial_prompt_template.render(template_context)
+
+        # Only outbound calls have voicemail tool
+        tools = [leave_voicemail] if call_direction == "outbound" else []
 
         super().__init__(instructions=instructions, tools=tools)
         self.ctx = ctx
-        self.is_outbound = is_outbound
         self.session_id = str(uuid4())
         self.current_trace = None
 
@@ -100,7 +109,7 @@ class CustomerServiceAgent(Agent):
     ) -> AsyncIterable[llm.ChatChunk]:
         generation = self.get_current_trace().generation(
             name="llm_generation",
-            model="gpt-4o-mini",
+            model="gpt-4.1",
             input=openai.utils.to_chat_ctx(chat_ctx, cache_key=self.llm),
         )
         output = ""
@@ -175,7 +184,7 @@ async def connect(ctx: JobContext, timeout: float = 3.0, max_retries: int = 3) -
                 logger.error("All connection attempts failed")
                 ctx.shutdown("connection_timeout")
                 return False
-            await asyncio.sleep(2.0)  # Wait before retry
+            await asyncio.sleep(random() + 1.0)  # Wait before retry
         except Exception as e:
             logger.error(f"Connection failed: {e}")
             ctx.shutdown("connection_failed")
@@ -187,9 +196,13 @@ async def connect(ctx: JobContext, timeout: float = 3.0, max_retries: int = 3) -
 async def entrypoint(ctx: JobContext):
     session = AgentSession(
         stt=deepgram.STT(),
-        llm=openai.LLM(model="gpt-4o-mini"),
+        llm=openai.LLM(model="gpt-4.1"),
         tts=elevenlabs.TTS(),
-        vad=silero.VAD.load(),
+        vad=silero.VAD.load(
+            activation_threshold=0.7,
+            min_speech_duration=0.15,
+            min_silence_duration=0.8,
+        ),
         turn_detection=EnglishModel(),
     )
 
