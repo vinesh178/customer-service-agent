@@ -19,28 +19,36 @@ Acme HVAC's Platinum Service customers pay a monthly fee for comprehensive annua
 graph TD
     A[Customer Database<br/>Platinum Service Subscribers] --> B[Daily Maintenance Check<br/>Midnight Cron Job]
     B --> C{Equipment Due<br/>for Maintenance?}
-    C -->|Yes| D[Queue Customer<br/>for Outbound Call]
+    C -->|Yes| D[Check Calendar<br/>for Existing Appointment]
     C -->|No| E[Skip Until Next Check]
     
-    D --> F[AI Voice Agent<br/>Initiates Call]
-    F --> G{Call Outcome}
+    D --> F{Already Scheduled<br/>in Calendar?}
+    F -->|Yes| G[Skip - Appointment Exists]
+    F -->|No| H[Check Call History<br/>Last 30 Days]
     
-    G -->|Live Person| H[Schedule Appointment<br/>Check Calendar & Confirm]
-    G -->|Voicemail| I[Leave Personalized<br/>Callback Message]
-    G -->|No Answer| J[Retry Later]
+    H --> I{Called in<br/>Last Month?}
+    I -->|Yes| J[Skip - Recently Contacted]
+    I -->|No| K[Queue Customer<br/>for Outbound Call]
     
-    H --> K[Send Confirmations<br/>Email/SMS]
-    I --> L[Customer Callback<br/>Press 1 for Scheduling]
-    L --> H
+    K --> L[AI Voice Agent<br/>Initiates Call]
+    L --> M{Call Outcome}
     
-    K --> M[Dispatch Technician<br/>by Service Area]
-    M --> N[Pre-Arrival Notification<br/>1 Hour Before]
-    N --> O[Complete Service]
-    O --> P[Update Customer Record<br/>Reset Maintenance Timer]
-    P --> A
+    M -->|Live Person| N[Schedule Appointment<br/>Check Calendar & Confirm]
+    M -->|Voicemail| O[Leave Personalized<br/>Callback Message]
+    M -->|No Answer| P[Retry Later]
     
-    Q[Human Supervisor] --> R[Monitor All Calls<br/>Intervene if Needed]
-    R --> F
+    N --> Q[Send Confirmations<br/>Email/SMS]
+    O --> R[Customer Callback<br/>Press 1 for Scheduling]
+    R --> N
+    
+    Q --> S[Dispatch Technician<br/>by Service Area]
+    S --> T[Pre-Arrival Notification<br/>1 Hour Before]
+    T --> U[Complete Service]
+    U --> V[Update Customer Record<br/>Reset Maintenance Timer]
+    V --> A
+    
+    W[Human Supervisor] --> X[Monitor All Calls<br/>Intervene if Needed]
+    X --> L
 ```
 
 ## Key Call Scenarios
