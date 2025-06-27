@@ -7,6 +7,9 @@ inbound_trunk.json
 outbound_trunk.json
 participant.json
 
+# Demo and documentation files
+DEMO.md
+
 # Python
 __pycache__/
 *.py[cod]
