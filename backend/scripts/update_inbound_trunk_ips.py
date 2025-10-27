@@ -61,8 +61,8 @@ async def update_inbound_trunk():
 
         # Delete old trunk
         print(f"Deleting trunk {trunk_id}...")
-        await lk_api.sip.delete_sip_inbound_trunk(
-            api.DeleteSIPInboundTrunkRequest(sip_trunk_id=trunk_id)
+        await lk_api.sip.delete_sip_trunk(
+            api.DeleteSIPTrunkRequest(sip_trunk_id=trunk_id)
         )
 
         # Recreate with Twilio IPs allowed
