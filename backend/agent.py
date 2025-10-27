@@ -51,8 +51,11 @@ jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
 class CustomerServiceAgent(Agent):
     def __init__(self, ctx: JobContext) -> None:
-        # Extract call direction and phone number from room name: "{inbound|outbound}_{phone_number}_{random_str}"
-        call_direction, phone_number, _ = ctx.room.name.split("_")
+        # Extract call direction and phone number from room name
+        # Format can be: "inbound_{phone}" from LiveKit SIP dispatch or "inbound_{phone}_{random}" from outbound calls
+        parts = ctx.room.name.split("_")
+        call_direction = parts[0]
+        phone_number = parts[1] if len(parts) >= 2 else ""
 
         # Lookup customer data using phone number
         template_context = CustomerService.get_template_context(phone_number)

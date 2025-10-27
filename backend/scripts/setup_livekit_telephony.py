@@ -57,7 +57,7 @@ async def create_dispatch_rule(lk_api, trunk_id):
         trunk_ids=[trunk_id],
         rule=api.SIPDispatchRule(
             dispatch_rule_individual=api.SIPDispatchRuleIndividual(
-                room_prefix="inbound-",
+                room_prefix="inbound_",
             )
         ),
     )
