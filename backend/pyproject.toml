@@ -10,6 +10,7 @@ dependencies = [
     "langfuse==2.60.8",
     "livekit-agents[deepgram,elevenlabs,openai,silero,turn-detector]",
     "python-dotenv",
+    "twilio",
     "uvicorn",
 ]
 
