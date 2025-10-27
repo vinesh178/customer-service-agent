@@ -52,20 +52,35 @@ async def update_inbound_trunk():
         trunk_id = trunk.sip_trunk_id
         print(f"Current trunk: {trunk_id}")
         print(f"Numbers: {', '.join(trunk.numbers)}")
-        print(f"Current allowed addresses: {trunk.allowed_addresses if hasattr(trunk, 'allowed_addresses') else 'None (allows all)'}")
+        print(f"Current allowed addresses: {trunk.allowed_addresses}")
 
-        print(f"\n⚠️  Cannot update trunk via API - need to use LiveKit dashboard")
-        print(f"\nTo fix the 503 error:")
-        print(f"1. Go to LiveKit dashboard: https://cloud.livekit.io")
-        print(f"2. Navigate to SIP → Inbound Trunks")
-        print(f"3. Edit trunk {trunk_id}")
-        print(f"4. Add these Twilio IP ranges to 'Allowed Addresses':")
-        print(f"\nTwilio SIP IP Ranges (copy-paste into LiveKit):")
-        for ip_range in twilio_ip_ranges:
-            print(f"   {ip_range}")
+        # Workaround: API has a bug with allowed_addresses in current version
+        # Solution: Use LiveKit CLI to update, or delete and recreate trunk
+        print(f"\n⚠️  API bug prevents updating allowed_addresses directly")
+        print(f"\nQuick fix: Delete and recreate trunk with allowed IPs")
 
-        print(f"\nOR leave 'Allowed Addresses' EMPTY to allow from any IP")
-        print(f"(Less secure but easier for testing)")
+        # Delete old trunk
+        print(f"Deleting trunk {trunk_id}...")
+        await lk_api.sip.delete_sip_inbound_trunk(
+            api.DeleteSIPInboundTrunkRequest(sip_trunk_id=trunk_id)
+        )
+
+        # Recreate with Twilio IPs allowed
+        print(f"Creating new trunk with Twilio IP allowlist...")
+        new_trunk = await lk_api.sip.create_sip_inbound_trunk(
+            api.CreateSIPInboundTrunkRequest(
+                trunk=api.SIPInboundTrunkInfo(
+                    name="Inbound LiveKit Trunk",
+                    numbers=[phone_number],
+                    allowed_addresses=twilio_ip_ranges,
+                )
+            )
+        )
+
+        print(f"✅ Trunk recreated successfully!")
+        print(f"   Trunk ID: {new_trunk.sip_trunk_id}")
+        print(f"   Numbers: {', '.join(new_trunk.numbers)}")
+        print(f"   Allowed {len(new_trunk.allowed_addresses)} Twilio IP ranges")
 
     except api.TwirpError as e:
         print(f"❌ Error: {e.message}")
