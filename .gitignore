@@ -36,6 +36,10 @@ wheels/
 venv/
 env/
 ENV/
+.venv/
+
+# uv lock file (uncomment if you don't want deterministic builds)
+# uv.lock
 
 # IDE
 .vscode/
