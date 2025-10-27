@@ -35,8 +35,10 @@ def check_twilio_logs():
                 status_emoji = "✅" if call.status == "completed" else "❌" if call.status == "failed" else "⚠️"
                 print(f"  {status_emoji} {call.start_time} - Status: {call.status}")
                 if call.status == "failed":
-                    print(f"      Error: {call.error_code} - {call.error_message}")
+                    print(f"      Error Code: {getattr(call, 'error_code', 'Unknown')}")
+                    print(f"      Error Message: {getattr(call, 'error_message', 'Unknown')}")
                     print(f"      From: {call.from_formatted}")
+                    print(f"      Call SID: {call.sid}")
                 elif call.status == "completed":
                     print(f"      Duration: {call.duration}s")
                     print(f"      From: {call.from_formatted}")
@@ -59,8 +61,10 @@ def check_twilio_logs():
                 status_emoji = "✅" if call.status == "completed" else "❌" if call.status == "failed" else "⚠️"
                 print(f"  {status_emoji} {call.start_time} - Status: {call.status}")
                 if call.status == "failed":
-                    print(f"      Error: {call.error_code} - {call.error_message}")
+                    print(f"      Error Code: {getattr(call, 'error_code', 'Unknown')}")
+                    print(f"      Error Message: {getattr(call, 'error_message', 'Unknown')}")
                     print(f"      To: {call.to_formatted}")
+                    print(f"      Call SID: {call.sid}")
                     
     except Exception as e:
         print(f"  Error fetching outbound calls: {e}")
