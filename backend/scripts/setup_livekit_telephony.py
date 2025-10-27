@@ -100,7 +100,6 @@ def main():
     if not livekit_trunk:
         livekit_trunk = create_livekit_trunk(client, sip_uri)
     else:
-        breakpoint()
         logging.info("LiveKit Trunk already exists. Using the existing trunk.")
 
     inbound_trunk_sid = create_inbound_trunk(phone_number)
